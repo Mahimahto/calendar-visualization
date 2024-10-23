@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as d3 from 'd3';
 
 const data = [
@@ -6,14 +6,32 @@ const data = [
   { date: "2024-11-08", title: "Blog Post 2", slug: "/blog-post-2" },
   { date: "2024-11-07", title: "Blog Post 3", slug: "/blog-post-3" },
   { date: "2024-11-06", title: "Blog Post 4", slug: "/blog-post-4" },
-  { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" }
+  { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-11-020", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-3", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-06", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-08", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-12-22", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-12-26", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-12-2", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-12-1", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-15", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-25", title: "Blog Post 5", slug: "/blog-post-5" },
+  { date: "2024-10-11", title: "Blog Post 5", slug: "/blog-post-5" }
+
 ];
 
 const Calendar = () => {
+  const [currentMonth, setCurrentMonth] = useState(new Date(2024, 10)); // November 2024
+
   useEffect(() => {
     const width = 900;
     const cellSize = 50;
-    const height = cellSize * 7 + 50;
+    const height = cellSize * 7 + 70;
+
+    // Remove previous SVG
+    d3.select("#calendar").selectAll("svg").remove();
 
     // Weekdays names
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -22,17 +40,17 @@ const Calendar = () => {
       .append("svg")
       .attr("width", width)
       .attr("height", height)
-      .style("border", "1px solid #ccc")
-      .style("border-radius", "10px")
-      .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)")
-      .style("background", "#f9f9f9")
+      .style("border", "2px solid #333")
+      .style("border-radius", "12px")
+      .style("box-shadow", "0 8px 16px rgba(0, 0, 0, 0.2)")
+      .style("background", "#fafafa")
       .append("g")
       .attr("transform", "translate(20, 40)");
 
     const parseDate = d3.timeParse("%Y-%m-%d");
-    const monthStart = d3.timeMonth(new Date(2024, 10));
+    const monthStart = d3.timeMonth(currentMonth);
     const monthEnd = d3.timeMonth.offset(monthStart, 1);
-    
+
     const daysInMonth = d3.timeDays(monthStart, monthEnd);
 
     const processedData = data.map(d => ({
@@ -45,10 +63,22 @@ const Calendar = () => {
       .style("position", "absolute")
       .style("visibility", "hidden")
       .style("background", "#fff")
-      .style("border", "1px solid #000")
-      .style("padding", "8px")
-      .style("border-radius", "4px")
+      .style("border", "1px solid #333")
+      .style("padding", "10px")
+      .style("border-radius", "6px")
       .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)");
+
+    // Display month and year
+    const monthYearFormat = d3.timeFormat("%B %Y");
+    svg.append("text")
+      .attr("x", width / 2 )
+      .attr("y", -20)
+      .attr("text-anchor", "middle")
+      .text(monthYearFormat(monthStart))
+      .attr("font-size", "24px")
+      .attr("fill", "#333")
+      .style("font-family", "Arial, sans-serif")
+      .style("font-weight", "bold");
 
     // Add Weekdays Names
     svg.selectAll(".weekday")
@@ -58,7 +88,7 @@ const Calendar = () => {
       .attr("x", (d, i) => i * cellSize)
       .attr("y", -10)
       .text(d => d)
-      .attr("font-size", "14px")
+      .attr("font-size", "16px")
       .attr("fill", "#333")
       .style("font-family", "Arial, sans-serif")
       .style("font-weight", "bold");
@@ -70,16 +100,16 @@ const Calendar = () => {
       .attr("class", "day")
       .attr("width", cellSize)
       .attr("height", cellSize)
-      .attr("x", (d, i) => (d.getDay() === 0 ? 6 : d.getDay() - 1) * cellSize) // Monday as first day
+      .attr("x", (d, i) => (d.getDay() === 0 ? 6 : d.getDay() - 1) * cellSize)
       .attr("y", (d, i) => Math.floor(i / 7) * cellSize + 20)
       .attr("fill", d => {
         const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
-        return blogPost ? "#add8e6" : "white";
+        return blogPost ? "#add8e6" : "#fff";
       })
       .attr("stroke", "#ccc")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
-      .on("mouseover", function(event, d) {
+      .on("mouseover", function (event, d) {
         const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
         if (blogPost) {
           tooltip.style("visibility", "visible")
@@ -87,24 +117,36 @@ const Calendar = () => {
           d3.select(this).transition().duration(200).attr("fill", "#ff9933");
         }
       })
-      .on("mousemove", function(event) {
+      .on("mousemove", function (event) {
         tooltip.style("top", (event.pageY - 10) + "px")
           .style("left", (event.pageX + 10) + "px");
       })
-      .on("mouseout", function() {
+      .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
         d3.select(this).transition().duration(200).attr("fill", d => {
           const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
-          return blogPost ? "#add8e6" : "white";
+          return blogPost ? "#add8e6" : "#fff";
         });
       });
 
-  }, []);
+  }, [currentMonth]);
+
+  const prevMonth = () => {
+    setCurrentMonth(d3.timeMonth.offset(currentMonth, -1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(d3.timeMonth.offset(currentMonth, 1));
+  };
 
   return (
     <div>
       <h1 style={{ textAlign: "center", marginBottom: "20px", fontFamily: "Arial, sans-serif", color: "#333" }}>My Calendar</h1>
-      <div id="calendar"></div>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <button onClick={prevMonth} style={{ marginRight: "20px", padding: "10px", cursor: "pointer" }}>⬅️</button>
+        <div id="calendar"></div>
+        <button onClick={nextMonth} style={{ marginLeft: "20px", padding: "10px", cursor: "pointer" }}>➡️</button>
+      </div>
     </div>
   );
 };
