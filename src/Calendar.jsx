@@ -7,19 +7,7 @@ const data = [
   { date: "2024-11-07", title: "Blog Post 3", slug: "/blog-post-3" },
   { date: "2024-11-06", title: "Blog Post 4", slug: "/blog-post-4" },
   { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-11-020", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-3", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-06", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-08", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-12-22", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-12-26", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-12-2", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-12-1", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-15", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-25", title: "Blog Post 5", slug: "/blog-post-5" },
-  { date: "2024-10-11", title: "Blog Post 5", slug: "/blog-post-5" }
-
+  // Add remaining data...
 ];
 
 const Calendar = () => {
@@ -50,7 +38,6 @@ const Calendar = () => {
     const parseDate = d3.timeParse("%Y-%m-%d");
     const monthStart = d3.timeMonth(currentMonth);
     const monthEnd = d3.timeMonth.offset(monthStart, 1);
-
     const daysInMonth = d3.timeDays(monthStart, monthEnd);
 
     const processedData = data.map(d => ({
@@ -71,7 +58,7 @@ const Calendar = () => {
     // Display month and year
     const monthYearFormat = d3.timeFormat("%B %Y");
     svg.append("text")
-      .attr("x", width / 2 )
+      .attr("x", width / 2)
       .attr("y", -20)
       .attr("text-anchor", "middle")
       .text(monthYearFormat(monthStart))
@@ -100,8 +87,11 @@ const Calendar = () => {
       .attr("class", "day")
       .attr("width", cellSize)
       .attr("height", cellSize)
-      .attr("x", (d, i) => (d.getDay() === 0 ? 6 : d.getDay() - 1) * cellSize)
-      .attr("y", (d, i) => Math.floor(i / 7) * cellSize + 20)
+      .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize) // Correct alignment with Monday start
+      .attr("y", (d, i) => {
+        const startWeekOffset = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1; // Handle week start correctly
+        return Math.floor((i + startWeekOffset) / 7) * cellSize + 20;
+      })
       .attr("fill", d => {
         const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
         return blogPost ? "#add8e6" : "#fff";
