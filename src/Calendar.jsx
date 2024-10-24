@@ -14,8 +14,8 @@ const Calendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2024, 10)); // November 2024
 
   useEffect(() => {
-    const width = 900;
-    const cellSize = 50;
+    const width = 500;
+    const cellSize = 60;
     const height = cellSize * 7 + 70;
 
     // Remove previous SVG
@@ -31,7 +31,6 @@ const Calendar = () => {
       .style("border", "2px solid #333")
       .style("border-radius", "12px")
       .style("box-shadow", "0 8px 16px rgba(0, 0, 0, 0.2)")
-      .style("background", "#fafafa")
       .append("g")
       .attr("transform", "translate(20, 40)");
 
@@ -55,25 +54,13 @@ const Calendar = () => {
       .style("border-radius", "6px")
       .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)");
 
-    // Display month and year
-    const monthYearFormat = d3.timeFormat("%B %Y");
-    svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", -20)
-      .attr("text-anchor", "middle")
-      .text(monthYearFormat(monthStart))
-      .attr("font-size", "24px")
-      .attr("fill", "#333")
-      .style("font-family", "Arial, sans-serif")
-      .style("font-weight", "bold");
-
     // Add Weekdays Names
     svg.selectAll(".weekday")
       .data(weekdays)
       .enter().append("text")
       .attr("class", "weekday")
       .attr("x", (d, i) => i * cellSize)
-      .attr("y", -10)
+      .attr("y", 20)  
       .text(d => d)
       .attr("font-size", "16px")
       .attr("fill", "#333")
@@ -87,10 +74,10 @@ const Calendar = () => {
       .attr("class", "day")
       .attr("width", cellSize)
       .attr("height", cellSize)
-      .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize) // Correct alignment with Monday start
+      .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize)
       .attr("y", (d, i) => {
-        const startWeekOffset = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1; // Handle week start correctly
-        return Math.floor((i + startWeekOffset) / 7) * cellSize + 20;
+        const startWeekOffset = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
+        return Math.floor((i + startWeekOffset) / 7) * cellSize + 30;
       })
       .attr("fill", d => {
         const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
@@ -130,12 +117,31 @@ const Calendar = () => {
   };
 
   return (
-    <div>
-      <h1 style={{ textAlign: "center", marginBottom: "20px", fontFamily: "Arial, sans-serif", color: "#333" }}>My Calendar</h1>
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <button onClick={prevMonth} style={{ marginRight: "20px", padding: "10px", cursor: "pointer" }}>⬅️</button>
-        <div id="calendar"></div>
-        <button onClick={nextMonth} style={{ marginLeft: "20px", padding: "10px", cursor: "pointer" }}>➡️</button>
+    <div style={{ position: "relative", width: "520px", margin: "0 auto" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "20px", fontFamily: "Arial, sans-serif", color: "Blue" }}><u>My Calendar</u></h1>
+      <div id="calendar" style={{ position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "absolute", top: "15px", left: "20px", right: "20px", zIndex: "10" }}>
+          <button onClick={prevMonth} style={{
+            background: "none",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+          }}>{"<"}</button>
+          <span style={{
+            fontSize: "24px",
+            fontWeight: "bold",
+            color: "#333",
+            fontFamily: "Arial, sans-serif"
+          }}>
+            {d3.timeFormat("%B %Y")(currentMonth)}
+          </span>
+          <button onClick={nextMonth} style={{
+            background: "none",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+          }}>{">"}</button>
+        </div>
       </div>
     </div>
   );
