@@ -1,27 +1,19 @@
+// src/Calendar.js
 import React, { useState, useEffect } from 'react';
 import * as d3 from 'd3';
 
-const data = [
-  { date: "2024-11-08", title: "Blog Post 1", slug: "/blog-post-1" },
-  { date: "2024-11-08", title: "Blog Post 2", slug: "/blog-post-2" },
-  { date: "2024-11-07", title: "Blog Post 3", slug: "/blog-post-3" },
-  { date: "2024-11-06", title: "Blog Post 4", slug: "/blog-post-4" },
-  { date: "2024-11-05", title: "Blog Post 5", slug: "/blog-post-5" },
-  // Add remaining data...
-];
-
-const Calendar = () => {
+const Calendar = ({ data }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2024, 10)); // November 2024
-
+  
   useEffect(() => {
     const width = 500;
     const cellSize = 60;
     const height = cellSize * 7 + 70;
 
-    // Remove previous SVG
+    // Purana SVG hatayein
     d3.select("#calendar").selectAll("svg").remove();
 
-    // Weekdays names
+    // Weekdays ke names
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     const svg = d3.select("#calendar")
@@ -54,7 +46,7 @@ const Calendar = () => {
       .style("border-radius", "6px")
       .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)");
 
-    // Add Weekdays Names
+    // Weekdays names add karna
     svg.selectAll(".weekday")
       .data(weekdays)
       .enter().append("text")
@@ -67,7 +59,7 @@ const Calendar = () => {
       .style("font-family", "Arial, sans-serif")
       .style("font-weight", "bold");
 
-    // Draw the calendar grid
+    // Calendar grid draw karna
     svg.selectAll(".day")
       .data(daysInMonth)
       .enter().append("rect")
@@ -90,7 +82,7 @@ const Calendar = () => {
         const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
         if (blogPost) {
           tooltip.style("visibility", "visible")
-            .html(`<b>${blogPost.title}</b><br>Date: ${blogPost.date}`);
+            .html(`<b>${blogPost.title}</b><br>Date: ${blogPost.date.toISOString().split('T')[0]}`);
           d3.select(this).transition().duration(200).attr("fill", "#ff9933");
         }
       })
@@ -106,7 +98,7 @@ const Calendar = () => {
         });
       });
 
-  }, [currentMonth]);
+  }, [currentMonth, data]);
 
   const prevMonth = () => {
     setCurrentMonth(d3.timeMonth.offset(currentMonth, -1));
