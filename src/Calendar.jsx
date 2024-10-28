@@ -4,13 +4,13 @@ import * as d3 from 'd3';
 
 const Calendar = ({ data }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2024, 10)); // November 2024
-  
+
   useEffect(() => {
     const width = 500;
     const cellSize = 60;
     const height = cellSize * 7 + 70;
 
-    // Purana SVG hatayein
+    // Remove purana SVG
     d3.select("#calendar").selectAll("svg").remove();
 
     // Weekdays ke names
@@ -31,10 +31,13 @@ const Calendar = ({ data }) => {
     const monthEnd = d3.timeMonth.offset(monthStart, 1);
     const daysInMonth = d3.timeDays(monthStart, monthEnd);
 
-    const processedData = data.map(d => ({
-      ...d,
-      date: parseDate(d.date)
-    }));
+    // Processed data with count of posts per day
+    const processedData = d3.rollups(data, v => v.length, d => d3.timeDay(parseDate(d.date)));
+
+    // Color scale to set intensity
+    const colorScale = d3.scaleLinear()
+      .domain([1, d3.max(processedData, d => d[1])]) // Min 1 post to max posts
+      .range(["#add8e6", "#00008b"]); // Light blue to dark blue
 
     const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
@@ -52,7 +55,7 @@ const Calendar = ({ data }) => {
       .enter().append("text")
       .attr("class", "weekday")
       .attr("x", (d, i) => i * cellSize)
-      .attr("y", 20)  
+      .attr("y", 20)
       .text(d => d)
       .attr("font-size", "16px")
       .attr("fill", "#333")
@@ -72,17 +75,17 @@ const Calendar = ({ data }) => {
         return Math.floor((i + startWeekOffset) / 7) * cellSize + 30;
       })
       .attr("fill", d => {
-        const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
-        return blogPost ? "#add8e6" : "#fff";
+        const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
+        return blogPost ? colorScale(blogPost[1]) : "#fff";
       })
       .attr("stroke", "#ccc")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
       .on("mouseover", function (event, d) {
-        const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
+        const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
         if (blogPost) {
           tooltip.style("visibility", "visible")
-            .html(`<b>${blogPost.title}</b><br>Date: ${blogPost.date.toISOString().split('T')[0]}`);
+            .html(`<b>${blogPost[1]} posts</b><br>Date: ${d.toISOString().split('T')[0]}`);
           d3.select(this).transition().duration(200).attr("fill", "#ff9933");
         }
       })
@@ -93,8 +96,8 @@ const Calendar = ({ data }) => {
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
         d3.select(this).transition().duration(200).attr("fill", d => {
-          const blogPost = processedData.find(post => d3.timeDay(post.date).getTime() === d.getTime());
-          return blogPost ? "#add8e6" : "#fff";
+          const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
+          return blogPost ? colorScale(blogPost[1]) : "#fff";
         });
       });
 
