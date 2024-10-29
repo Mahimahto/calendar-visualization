@@ -3,17 +3,15 @@ import React, { useState, useEffect } from 'react';
 import * as d3 from 'd3';
 
 const Calendar = ({ data }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2024, 10)); // November 2024
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
     const width = 500;
     const cellSize = 60;
     const height = cellSize * 7 + 70;
 
-    // Remove purana SVG
     d3.select("#calendar").selectAll("svg").remove();
 
-    // Weekdays ke names
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     const svg = d3.select("#calendar")
@@ -26,18 +24,20 @@ const Calendar = ({ data }) => {
       .append("g")
       .attr("transform", "translate(20, 40)");
 
-    const parseDate = d3.timeParse("%Y-%m-%d");
     const monthStart = d3.timeMonth(currentMonth);
     const monthEnd = d3.timeMonth.offset(monthStart, 1);
     const daysInMonth = d3.timeDays(monthStart, monthEnd);
 
-    // Processed data with count of posts per day
-    const processedData = d3.rollups(data, v => v.length, d => d3.timeDay(parseDate(d.date)));
+    // Update to get correct count of posts per day
+    const processedData = d3.rollups(
+      data,
+      (v) => v.length,
+      (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date)) // Parsing date without offset issue
+    );
 
-    // Color scale to set intensity
     const colorScale = d3.scaleLinear()
-      .domain([1, d3.max(processedData, d => d[1])]) // Min 1 post to max posts
-      .range(["#add8e6", "#00008b"]); // Light blue to dark blue
+      .domain([0, d3.max(processedData, d => d[1] || 0)])
+      .range(["#add8e6", "#00008b"]);
 
     const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
@@ -49,7 +49,7 @@ const Calendar = ({ data }) => {
       .style("border-radius", "6px")
       .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)");
 
-    // Weekdays names add karna
+    // Add weekday names
     svg.selectAll(".weekday")
       .data(weekdays)
       .enter().append("text")
@@ -62,7 +62,7 @@ const Calendar = ({ data }) => {
       .style("font-family", "Arial, sans-serif")
       .style("font-weight", "bold");
 
-    // Calendar grid draw karna
+    // Draw the calendar grid
     svg.selectAll(".day")
       .data(daysInMonth)
       .enter().append("rect")
@@ -75,17 +75,19 @@ const Calendar = ({ data }) => {
         return Math.floor((i + startWeekOffset) / 7) * cellSize + 30;
       })
       .attr("fill", d => {
-        const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
+        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+        const blogPost = processedData.find(post => post[0] === formattedDate);
         return blogPost ? colorScale(blogPost[1]) : "#fff";
       })
       .attr("stroke", "#ccc")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
       .on("mouseover", function (event, d) {
-        const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
+        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+        const blogPost = processedData.find(post => post[0] === formattedDate);
         if (blogPost) {
           tooltip.style("visibility", "visible")
-            .html(`<b>${blogPost[1]} posts</b><br>Date: ${d.toISOString().split('T')[0]}`);
+            .html(`<b>${blogPost[1]} posts</b><br>Date: ${formattedDate}`);
           d3.select(this).transition().duration(200).attr("fill", "#ff9933");
         }
       })
@@ -96,7 +98,8 @@ const Calendar = ({ data }) => {
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
         d3.select(this).transition().duration(200).attr("fill", d => {
-          const blogPost = processedData.find(post => d3.timeDay(post[0]).getTime() === d.getTime());
+          const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+          const blogPost = processedData.find(post => post[0] === formattedDate);
           return blogPost ? colorScale(blogPost[1]) : "#fff";
         });
       });
