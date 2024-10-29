@@ -1,4 +1,3 @@
-// src/Calendar.js
 import React, { useState, useEffect } from 'react';
 import * as d3 from 'd3';
 
@@ -84,16 +83,17 @@ const Calendar = ({ data }) => {
       .style("cursor", "pointer")
       .on("mouseover", function (event, d) {
         const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-        const blogPost = processedData.find(post => post[0] === formattedDate);
-        if (blogPost) {
-          tooltip.style("visibility", "visible")
-            .html(`<b>${blogPost[1]} posts</b><br>Date: ${formattedDate}`);
+        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate); // Filter out all blogs for that day
+        if (blogPosts.length) {
+          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank">${post.title}</a></li>`).join("");
+          tooltip.html(`<b>${blogPosts.length} post${blogPosts.length > 1 ? 's' : ''} on ${formattedDate}</b><ul>${tooltipContent}</ul>`)
+                 .style("visibility", "visible");
           d3.select(this).transition().duration(200).attr("fill", "#ff9933");
         }
       })
       .on("mousemove", function (event) {
         tooltip.style("top", (event.pageY - 10) + "px")
-          .style("left", (event.pageX + 10) + "px");
+               .style("left", (event.pageX + 10) + "px");
       })
       .on("mouseout", function () {
         tooltip.style("visibility", "hidden");
