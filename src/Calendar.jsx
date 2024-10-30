@@ -3,6 +3,8 @@ import * as d3 from 'd3';
 
 const Calendar = ({ data }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [staticTooltip, setStaticTooltip] = useState(null);
+  const [hoveredCell, setHoveredCell] = useState(null); // New state for hovered cell
 
   useEffect(() => {
     const width = 500;
@@ -27,28 +29,30 @@ const Calendar = ({ data }) => {
     const monthEnd = d3.timeMonth.offset(monthStart, 1);
     const daysInMonth = d3.timeDays(monthStart, monthEnd);
 
-    // Update to get correct count of posts per day
     const processedData = d3.rollups(
       data,
       (v) => v.length,
-      (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date)) // Parsing date without offset issue
+      (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date))
     );
 
     const colorScale = d3.scaleLinear()
       .domain([0, d3.max(processedData, d => d[1] || 0)])
       .range(["#add8e6", "#00008b"]);
 
-    const tooltip = d3.select("body").append("div")
+    const tooltip = d3.select("#calendar").append("div")
       .attr("class", "tooltip")
       .style("position", "absolute")
       .style("visibility", "hidden")
-      .style("background", "#fff")
-      .style("border", "1px solid #333")
+      .style("background", "#333")
+      .style("color", "#fff")
       .style("padding", "10px")
-      .style("border-radius", "6px")
-      .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)");
+      .style("border-radius", "8px")
+      .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.15)")
+      .style("width", "220px")
+      .style("font-size", "14px")
+      .style("font-family", "Arial, sans-serif")
+      .style("z-index", "10");
 
-    // Add weekday names
     svg.selectAll(".weekday")
       .data(weekdays)
       .enter().append("text")
@@ -58,10 +62,8 @@ const Calendar = ({ data }) => {
       .text(d => d)
       .attr("font-size", "16px")
       .attr("fill", "#333")
-      .style("font-family", "Arial, sans-serif")
       .style("font-weight", "bold");
 
-    // Draw the calendar grid
     svg.selectAll(".day")
       .data(daysInMonth)
       .enter().append("rect")
@@ -81,30 +83,56 @@ const Calendar = ({ data }) => {
       .attr("stroke", "#ccc")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
-      .on("mouseover", function (event, d) {
+      .on("mouseenter", function (event, d) {
         const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate); // Filter out all blogs for that day
+        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
+
         if (blogPosts.length) {
-          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank">${post.title}</a></li>`).join("");
+          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank" style="color: #add8e6; text-decoration: none;">${post.title}</a></li>`).join("");
           tooltip.html(`<b>${blogPosts.length} post${blogPosts.length > 1 ? 's' : ''} on ${formattedDate}</b><ul>${tooltipContent}</ul>`)
-                 .style("visibility", "visible");
-          d3.select(this).transition().duration(200).attr("fill", "#ff9933");
+                 .style("visibility", "visible")
+                 .style("top", `${d3.pointer(event, this)[1] - 10}px`)
+                 .style("left", `${d3.pointer(event, this)[0] + 10}px`);
+
+          setHoveredCell(formattedDate); // Set the hovered cell
+        } else {
+          tooltip.style("visibility", "hidden");
         }
       })
-      .on("mousemove", function (event) {
-        tooltip.style("top", (event.pageY - 10) + "px")
-               .style("left", (event.pageX + 10) + "px");
+      .on("mouseleave", function () {
+        // Do not hide tooltip if staticTooltip is set
+        if (!staticTooltip) tooltip.style("visibility", "hidden");
+        setHoveredCell(null); // Clear the hovered cell state
       })
-      .on("mouseout", function () {
-        tooltip.style("visibility", "hidden");
-        d3.select(this).transition().duration(200).attr("fill", d => {
-          const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-          const blogPost = processedData.find(post => post[0] === formattedDate);
-          return blogPost ? colorScale(blogPost[1]) : "#fff";
-        });
+      .on("click", function (event, d) {
+        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
+
+        if (blogPosts.length) {
+          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank" style="color: #add8e6; text-decoration: none;">${post.title}</a></li>`).join("");
+          tooltip.html(`<b>${blogPosts.length} post${blogPosts.length > 1 ? 's' : ''} on ${formattedDate}</b><ul>${tooltipContent}</ul>`)
+                 .style("visibility", "visible")
+                 .style("top", `${d3.pointer(event, this)[1] - 10}px`)
+                 .style("left", `${d3.pointer(event, this)[0] + 10}px`);
+          setStaticTooltip({ date: formattedDate }); // Set static tooltip on click
+        }
       });
 
-  }, [currentMonth, data]);
+    const handleClickOutside = (e) => {
+      if (staticTooltip && !e.target.closest(".tooltip") && !e.target.closest(".day")) {
+        setStaticTooltip(null);
+        tooltip.style("visibility", "hidden");
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      tooltip.remove();
+    };
+
+  }, [currentMonth, data, staticTooltip]);
 
   const prevMonth = () => {
     setCurrentMonth(d3.timeMonth.offset(currentMonth, -1));
