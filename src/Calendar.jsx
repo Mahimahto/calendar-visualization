@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 const Calendar = ({ data }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [staticTooltip, setStaticTooltip] = useState(null);
-  const [hoveredCell, setHoveredCell] = useState(null); // New state for hovered cell
+  const [hoveredCell, setHoveredCell] = useState(null);
 
   useEffect(() => {
     const width = 500;
@@ -14,7 +14,7 @@ const Calendar = ({ data }) => {
     d3.select("#calendar").selectAll("svg").remove();
 
     const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
+    
     const svg = d3.select("#calendar")
       .append("svg")
       .attr("width", width)
@@ -99,11 +99,6 @@ const Calendar = ({ data }) => {
           tooltip.style("visibility", "hidden");
         }
       })
-      .on("mouseleave", function () {
-        // Do not hide tooltip if staticTooltip is set
-        if (!staticTooltip) tooltip.style("visibility", "hidden");
-        setHoveredCell(null); // Clear the hovered cell state
-      })
       .on("click", function (event, d) {
         const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
         const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
@@ -117,6 +112,14 @@ const Calendar = ({ data }) => {
           setStaticTooltip({ date: formattedDate }); // Set static tooltip on click
         }
       });
+
+    // Check if hoveredCell is set upon rendering
+    if (hoveredCell) {
+      const hoveredRect = svg.select(`.day[data-date="${hoveredCell}"]`);
+      if (!hoveredRect.empty()) {
+        hoveredRect.dispatch("mouseenter");
+      }
+    }
 
     const handleClickOutside = (e) => {
       if (staticTooltip && !e.target.closest(".tooltip") && !e.target.closest(".day")) {
@@ -132,7 +135,7 @@ const Calendar = ({ data }) => {
       tooltip.remove();
     };
 
-  }, [currentMonth, data, staticTooltip]);
+  }, [currentMonth, data, staticTooltip, hoveredCell]); // Add hoveredCell to dependencies
 
   const prevMonth = () => {
     setCurrentMonth(d3.timeMonth.offset(currentMonth, -1));
