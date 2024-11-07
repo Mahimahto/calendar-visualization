@@ -1,6 +1,11 @@
 export const data = [
   {
-    "date": "2024-06-26",
+    "date": "2023-06-26",
+    "title": "Blog Post 1",
+    "slug": "/blog-post-1"
+  },
+  {
+    "date": "2026-06-26",
     "title": "Blog Post 1",
     "slug": "/blog-post-1"
   },
@@ -2518,5 +2523,28 @@ export const data = [
     "date": "2024-11-01",
     "title": "Blog Post 504",
     "slug": "/blog-post-504"
+  },
+  {
+    "date": "2025-01-01",
+    "title": "Blog Post 505",
+    "slug": "/blog-post-505"
+  },
+  {
+    "date": "2025-03-01",
+    "title": "Blog Post 506",
+    "slug": "/blog-post-506"
+  },
+  {
+    "date": "2025-03-01",
+    "title": "Blog Post 507",
+    "slug": "/blog-post-507"
+  },{
+    "date": "2025-03-01",
+    "title": "Blog Post 508",
+    "slug": "/blog-post-508"
+  },{
+    "date": "2025-03-01",
+    "title": "Blog Post 509",
+    "slug": "/blog-post-509"
   },
 ];

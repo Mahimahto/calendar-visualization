@@ -1,176 +1,120 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import * as d3 from 'd3';
 
 const Calendar = ({ data }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [staticTooltip, setStaticTooltip] = useState(null);
-  const [hoveredCell, setHoveredCell] = useState(null);
+  // Determine start and end years based on the data
+  const startYear = d3.min(data, d => new Date(d.date).getFullYear());
+  const endYear = d3.max(data, d => new Date(d.date).getFullYear());
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).reverse();
 
   useEffect(() => {
-    const width = 500;
-    const cellSize = 60;
-    const height = cellSize * 7 + 70;
+    years.forEach((year) => {
+      const width = 100;
+      const cellSize = 15;
+      const height = cellSize * 7 + 30;
 
-    d3.select("#calendar").selectAll("svg").remove();
+      d3.select(`#calendar-${year}`).selectAll("svg").remove();
 
-    const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    
-    const svg = d3.select("#calendar")
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .style("border", "2px solid #333")
-      .style("border-radius", "12px")
-      .style("box-shadow", "0 8px 16px rgba(0, 0, 0, 0.2)")
-      .append("g")
-      .attr("transform", "translate(20, 40)");
+      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const months = d3.timeMonths(new Date(year, 0, 1), new Date(year + 1, 0, 1));
 
-    const monthStart = d3.timeMonth(currentMonth);
-    const monthEnd = d3.timeMonth.offset(monthStart, 1);
-    const daysInMonth = d3.timeDays(monthStart, monthEnd);
+      const processedData = d3.rollups(
+        data,
+        (v) => v.length,
+        (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date))
+      );
 
-    const processedData = d3.rollups(
-      data,
-      (v) => v.length,
-      (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date))
-    );
+      const colorScale = d3.scaleLinear()
+        .domain([0, d3.max(processedData, d => d[1] || 0)])
+        .range(["#add8e6", "#00008b"]);
 
-    const colorScale = d3.scaleLinear()
-      .domain([0, d3.max(processedData, d => d[1] || 0)])
-      .range(["#add8e6", "#00008b"]);
+      const container = d3.select(`#calendar-${year}`);
 
-    const tooltip = d3.select("#calendar").append("div")
-      .attr("class", "tooltip")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background", "#333")
-      .style("color", "#fff")
-      .style("padding", "10px")
-      .style("border-radius", "8px")
-      .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.15)")
-      .style("width", "220px")
-      .style("font-size", "14px")
-      .style("font-family", "Arial, sans-serif")
-      .style("z-index", "10");
+      months.forEach((month) => {
+        const monthStart = d3.timeMonth(month);
+        const daysInMonth = d3.timeDays(monthStart, d3.timeMonth.offset(monthStart, 1));
 
-    svg.selectAll(".weekday")
-      .data(weekdays)
-      .enter().append("text")
-      .attr("class", "weekday")
-      .attr("x", (d, i) => i * cellSize)
-      .attr("y", 20)
-      .text(d => d)
-      .attr("font-size", "16px")
-      .attr("fill", "#333")
-      .style("font-weight", "bold");
+        const svg = container
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .style("margin", "5px 10px")
+          .append("g")
+          .attr("transform", "translate(10, 30)");
 
-    svg.selectAll(".day")
-      .data(daysInMonth)
-      .enter().append("rect")
-      .attr("class", "day")
-      .attr("width", cellSize)
-      .attr("height", cellSize)
-      .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize)
-      .attr("y", (d, i) => {
-        const startWeekOffset = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
-        return Math.floor((i + startWeekOffset) / 7) * cellSize + 30;
-      })
-      .attr("fill", d => {
-        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-        const blogPost = processedData.find(post => post[0] === formattedDate);
-        return blogPost ? colorScale(blogPost[1]) : "#fff";
-      })
-      .attr("stroke", "#ccc")
-      .attr("stroke-width", 1)
-      .style("cursor", "pointer")
-      .on("mouseenter", function (event, d) {
-        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
+        svg.append("text")
+          .attr("x", width / 2)
+          .attr("y", -10)
+          .attr("text-anchor", "middle")
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+          .text(d3.timeFormat("%B")(month));
 
-        if (blogPosts.length) {
-          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank" style="color: #add8e6; text-decoration: none;">${post.title}</a></li>`).join("");
-          tooltip.html(`<b>${blogPosts.length} post${blogPosts.length > 1 ? 's' : ''} on ${formattedDate}</b><ul>${tooltipContent}</ul>`)
-                 .style("visibility", "visible")
-                 .style("top", `${d3.pointer(event, this)[1] - 10}px`)
-                 .style("left", `${d3.pointer(event, this)[0] + 10}px`);
+        svg.selectAll(".weekday")
+          .data(weekdays)
+          .enter().append("text")
+          .attr("class", "weekday")
+          .attr("x", (d, i) => i * cellSize)
+          .attr("y", 15)
+          .text(d => d)
+          .attr("font-size", "8px")
+          .attr("fill", "#333");
 
-          setHoveredCell(formattedDate); // Set the hovered cell
-        } else {
-          tooltip.style("visibility", "hidden");
-        }
-      })
-      .on("click", function (event, d) {
-        const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
-        const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
+        svg.selectAll(".day")
+          .data(daysInMonth)
+          .enter().append("rect")
+          .attr("class", "day")
+          .attr("width", cellSize)
+          .attr("height", cellSize)
+          .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize)
+          .attr("y", (d, i) => Math.floor((i + monthStart.getDay()) / 7) * cellSize + 25)
+          .attr("fill", d => {
+            const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+            const blogPost = processedData.find(post => post[0] === formattedDate);
+            return blogPost ? colorScale(blogPost[1]) : "#fff";
+          })
+          .attr("stroke", "#ccc")
+          .attr("stroke-width", 1)
+          .style("cursor", "pointer")
+          .on("mouseenter", function (event, d) {
+            const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
+            const blogPosts = data.filter(post => d3.timeFormat("%Y-%m-%d")(new Date(post.date)) === formattedDate);
 
-        if (blogPosts.length) {
-          const tooltipContent = blogPosts.map(post => `<li><a href="${post.slug}" target="_blank" style="color: #add8e6; text-decoration: none;">${post.title}</a></li>`).join("");
-          tooltip.html(`<b>${blogPosts.length} post${blogPosts.length > 1 ? 's' : ''} on ${formattedDate}</b><ul>${tooltipContent}</ul>`)
-                 .style("visibility", "visible")
-                 .style("top", `${d3.pointer(event, this)[1] - 10}px`)
-                 .style("left", `${d3.pointer(event, this)[0] + 10}px`);
-          setStaticTooltip({ date: formattedDate }); // Set static tooltip on click
-        }
+            if (blogPosts.length) {
+              const tooltip = d3.select("#calendar-container").append("div")
+                .attr("class", "tooltip")
+                .style("position", "absolute")
+                .style("background", "#333")
+                .style("color", "#fff")
+                .style("padding", "5px")
+                .style("border-radius", "4px")
+                .style("visibility", "visible")
+                .html(blogPosts.map(post => `<div>${post.title}</div>`).join(""));
+              
+              tooltip.style("top", `${event.pageY}px`).style("left", `${event.pageX}px`);
+            }
+          })
+          .on("mouseleave", () => {
+            d3.select(".tooltip").remove();
+          });
       });
-
-    // Check if hoveredCell is set upon rendering
-    if (hoveredCell) {
-      const hoveredRect = svg.select(`.day[data-date="${hoveredCell}"]`);
-      if (!hoveredRect.empty()) {
-        hoveredRect.dispatch("mouseenter");
-      }
-    }
-
-    const handleClickOutside = (e) => {
-      if (staticTooltip && !e.target.closest(".tooltip") && !e.target.closest(".day")) {
-        setStaticTooltip(null);
-        tooltip.style("visibility", "hidden");
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-      tooltip.remove();
-    };
-
-  }, [currentMonth, data, staticTooltip, hoveredCell]); // Add hoveredCell to dependencies
-
-  const prevMonth = () => {
-    setCurrentMonth(d3.timeMonth.offset(currentMonth, -1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(d3.timeMonth.offset(currentMonth, 1));
-  };
+    });
+  }, [data, years]);
 
   return (
-    <div style={{ position: "relative", width: "520px", margin: "0 auto" }}>
-      <h1 style={{ textAlign: "center", marginBottom: "20px", fontFamily: "Arial, sans-serif", color: "Blue" }}><u>My Calendar</u></h1>
-      <div id="calendar" style={{ position: "relative" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "absolute", top: "15px", left: "20px", right: "20px", zIndex: "10" }}>
-          <button onClick={prevMonth} style={{
-            background: "none",
-            border: "none",
-            fontSize: "24px",
-            cursor: "pointer",
-          }}>{"<"}</button>
-          <span style={{
-            fontSize: "24px",
-            fontWeight: "bold",
-            color: "#333",
-            fontFamily: "Arial, sans-serif"
-          }}>
-            {d3.timeFormat("%B %Y")(currentMonth)}
-          </span>
-          <button onClick={nextMonth} style={{
-            background: "none",
-            border: "none",
-            fontSize: "24px",
-            cursor: "pointer",
-          }}>{">"}</button>
-        </div>
+    <div style={{ width: "100%", margin: "0 auto", textAlign: "center" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "20px", color: "blue" }}>
+        <u>Yearly Calendars</u>
+      </h1>
+      <div id="calendar-container">
+        {years.map(year => (
+          <div key={year} style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
+            <div style={{ width: "60px", textAlign: "right", paddingRight: "10px", color: "blue", fontWeight: "bold", fontSize: "16px" }}>
+              {year}
+            </div>
+            <div id={`calendar-${year}`} style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", flex: 1 }} />
+          </div>
+        ))}
       </div>
     </div>
   );
