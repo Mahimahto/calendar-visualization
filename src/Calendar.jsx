@@ -2,20 +2,19 @@ import React, { useEffect } from 'react';
 import * as d3 from 'd3';
 
 const Calendar = ({ data }) => {
-  // Determine start and end years based on the data
   const startYear = d3.min(data, d => new Date(d.date).getFullYear());
   const endYear = d3.max(data, d => new Date(d.date).getFullYear());
   const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i).reverse();
 
   useEffect(() => {
     years.forEach((year) => {
-      const width = 100;
-      const cellSize = 15;
+      const width = 130;  // Adjusted to accommodate all days, including Sunday
+      const cellSize = 16;
       const height = cellSize * 7 + 30;
 
       d3.select(`#calendar-${year}`).selectAll("svg").remove();
 
-      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const weekdays = ["M", "T", "W", "T", "F", "S", "S"];
       const months = d3.timeMonths(new Date(year, 0, 1), new Date(year + 1, 0, 1));
 
       const processedData = d3.rollups(
@@ -38,7 +37,7 @@ const Calendar = ({ data }) => {
           .append("svg")
           .attr("width", width)
           .attr("height", height)
-          .style("margin", "5px 10px")
+          .style("margin", "3px") // Reduced gap between months
           .append("g")
           .attr("transform", "translate(10, 30)");
 
@@ -48,6 +47,7 @@ const Calendar = ({ data }) => {
           .attr("text-anchor", "middle")
           .style("font-size", "12px")
           .style("font-weight", "bold")
+          .style("fill", "blue")
           .text(d3.timeFormat("%B")(month));
 
         svg.selectAll(".weekday")
@@ -66,8 +66,8 @@ const Calendar = ({ data }) => {
           .attr("class", "day")
           .attr("width", cellSize)
           .attr("height", cellSize)
-          .attr("x", (d, i) => ((d.getDay() + 6) % 7) * cellSize)
-          .attr("y", (d, i) => Math.floor((i + monthStart.getDay()) / 7) * cellSize + 25)
+          .attr("x", (d) => d.getDay() * cellSize)
+          .attr("y", (d, i) => Math.floor(i / 7) * cellSize + 25)
           .attr("fill", d => {
             const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
             const blogPost = processedData.find(post => post[0] === formattedDate);
@@ -102,17 +102,15 @@ const Calendar = ({ data }) => {
   }, [data, years]);
 
   return (
-    <div style={{ width: "100%", margin: "0 auto", textAlign: "center" }}>
-      <h1 style={{ textAlign: "center", marginBottom: "20px", color: "blue" }}>
-        <u>Yearly Calendars</u>
-      </h1>
+    <div className="container mx-auto text-center">
+      <h1 className="text-blue-600 mb-4 underline">Yearly Calendars</h1>
       <div id="calendar-container">
         {years.map(year => (
-          <div key={year} style={{ display: "flex", alignItems: "center", marginBottom: "20px" }}>
-            <div style={{ width: "60px", textAlign: "right", paddingRight: "10px", color: "blue", fontWeight: "bold", fontSize: "16px" }}>
+          <div key={year} className="flex items-start">
+            <div className="w-16 text-right pr-3 text-blue-600 font-bold text-lg">
               {year}
             </div>
-            <div id={`calendar-${year}`} style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", flex: 1 }} />
+            <div id={`calendar-${year}`} className="flex flex-wrap gap-2" />
           </div>
         ))}
       </div>
