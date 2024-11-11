@@ -23,9 +23,10 @@ const Calendar = ({ data }) => {
         (d) => d3.timeFormat("%Y-%m-%d")(new Date(d.date))
       );
 
+      // Adjusting the color scale to make light color for fewer blog posts and dark for more
       const colorScale = d3.scaleLinear()
-        .domain([0, d3.max(processedData, d => d[1] || 0)])
-        .range(["#add8e6", "#00008b"]);
+        .domain([0, d3.max(processedData, d => d[1] || 0)])  // 0 to max number of posts
+        .range([d3.rgb("#7d4e70").brighter(1.5), d3.rgb("#7d4e70"), d3.rgb("#7d4e70").darker(1)]); // Lighter shades for fewer posts, darker for more
 
       const container = d3.select(`#calendar-${year}`);
 
@@ -47,7 +48,7 @@ const Calendar = ({ data }) => {
           .attr("text-anchor", "middle")
           .style("font-size", "12px")
           .style("font-weight", "bold")
-          .style("fill", "blue")
+          .style("fill", "#7d4e70")  // Title in Tattle color
           .text(d3.timeFormat("%B")(month));
 
         svg.selectAll(".weekday")
@@ -71,7 +72,7 @@ const Calendar = ({ data }) => {
           .attr("fill", d => {
             const formattedDate = d3.timeFormat("%Y-%m-%d")(d);
             const blogPost = processedData.find(post => post[0] === formattedDate);
-            return blogPost ? colorScale(blogPost[1]) : "#fff";
+            return blogPost ? colorScale(blogPost[1]) : "#fff";  // Use the color scale for the fill
           })
           .attr("stroke", "#ccc")
           .attr("stroke-width", 1)
@@ -103,11 +104,11 @@ const Calendar = ({ data }) => {
 
   return (
     <div className="container mx-auto text-center">
-      <h1 className="text-blue-600 mb-4 underline">Yearly Calendars</h1>
+      <h1 className="text-[#7d4e70] mb-4 underline">Yearly Calendars</h1>  {/* Title color */}
       <div id="calendar-container">
         {years.map(year => (
           <div key={year} className="flex items-start">
-            <div className="w-16 text-right pr-3 text-blue-600 font-bold text-lg">
+            <div className="w-16 text-right pr-3 text-[#7d4e70] font-bold text-lg">  {/* Year color */}
               {year}
             </div>
             <div id={`calendar-${year}`} className="flex flex-wrap gap-2" />
